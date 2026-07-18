@@ -1,3 +1,4 @@
+import { useMarketStore } from '../store/marketStore';
 import type {
     ConnectionEvents,
 } from './events';
@@ -10,21 +11,20 @@ const MAX_BACKOFF = 30000;
 
 export class ConnectionManager {
     private socket?: WebSocket;
-
     private reconnectAttempt = 0;
-
     private listeners: Partial<ConnectionEvents> =
         {};
-
     connect(url: string) {
         this.socket = new WebSocket(url);
-
         this.socket.onopen = () => {
             this.reconnectAttempt = 0;
-
+            useMarketStore
+                .getState()
+                .setConnectionStatus(
+                    'connected',
+                );
             this.listeners.open?.();
         };
-
         this.socket.onmessage = (
             event,
         ) => {
@@ -32,12 +32,36 @@ export class ConnectionManager {
                 JSON.parse(
                     event.data,
                 ) as ServerMessage;
-
+            switch (message.type) {
+                case 'snapshot':
+                    useMarketStore
+                        .getState()
+                        .setSnapshot(
+                            message.payload
+                                .symbols,
+                        );
+                    break;
+                case 'update':
+                    useMarketStore
+                        .getState()
+                        .updateSymbols(
+                            message.payload
+                                .updates,
+                        );
+                    break;
+                case 'heartbeat':
+                    useMarketStore
+                        .getState()
+                        .setHeartbeat(
+                            message.payload,
+                        );
+                    break;
+            }
             this.listeners.message?.(
                 message,
             );
-        };
 
+        };
         this.socket.onerror = (
             error,
         ) => {
@@ -45,30 +69,29 @@ export class ConnectionManager {
                 error,
             );
         };
-
         this.socket.onclose = () => {
             this.listeners.close?.();
-
+            useMarketStore
+                .getState()
+                .setConnectionStatus(
+                    'disconnected',
+                );
             this.reconnect();
         };
     }
-
     disconnect() {
         this.socket?.close();
     }
-
     send(data: unknown) {
         if (
             this.socket?.readyState !==
             WebSocket.OPEN
         )
             return;
-
         this.socket.send(
             JSON.stringify(data),
         );
     }
-
     on(
         events: Partial<ConnectionEvents>,
     ) {
@@ -77,14 +100,11 @@ export class ConnectionManager {
             ...events,
         };
     }
-
     private reconnect() {
         this.reconnectAttempt++;
-
         this.listeners.reconnect?.(
             this.reconnectAttempt,
         );
-
         const delay = Math.min(
             1000 *
             2 **
@@ -92,7 +112,6 @@ export class ConnectionManager {
                 .reconnectAttempt,
             MAX_BACKOFF,
         );
-
         setTimeout(() => {
             this.connect(
                 import.meta.env
