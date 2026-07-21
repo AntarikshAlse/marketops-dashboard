@@ -1,17 +1,13 @@
 import type { ServerMessage } from './types';
 
 export interface ConnectionEvents {
-    open: () => void;
+  open: () => void;
 
-    close: () => void;
+  close: () => void;
 
-    reconnect: (
-        attempt: number,
-    ) => void;
+  reconnect: (attempt: number) => void;
 
-    message: (
-        message: ServerMessage,
-    ) => void;
+  message: (message: ServerMessage) => void;
 
-    error: (error: Event) => void;
+  error: (error: Event) => void;
 }

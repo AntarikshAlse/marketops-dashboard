@@ -1,41 +1,41 @@
-export interface PricePoint {
-    timestamp: number;
-    price: number;
-    volume: number;
+export interface HistoryPoint {
+  timestamp: number;
+  price: number;
 }
 
 export interface SymbolState {
-    symbol: string;
+  symbol: string;
 
-    currentPrice: number | null;
+  currentPrice: number | null;
 
-    previousClose: number | null;
+  absoluteChange: number | null;
 
-    absoluteChange: number;
+  percentChange: number | null;
 
-    percentChange: number;
+  totalVolume: number;
 
-    totalVolume: number;
+  tradeCount: number;
 
-    tradeCount: number;
+  high: number | null;
 
-    high: number | null;
+  low: number | null;
 
-    low: number | null;
+  vwap: number | null;
 
-    vwap: number;
+  lastTradeTimestamp: number | null;
 
-    lastTradeTimestamp: number | null;
+  history: HistoryPoint[];
+}
+export interface HeartbeatState {
+  timestamp: number;
 
-    stale: boolean;
+  connectedClients: number;
 
-    history: PricePoint[];
+  providerConnected: boolean;
 }
 
-export interface HeartbeatState {
-    timestamp: number;
-
-    connectedClients: number;
-
-    providerConnected: boolean;
+export interface ConnectionInfo {
+  timestamp: number;
+  connectedClients: number;
+  providerConnected: boolean;
 }

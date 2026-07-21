@@ -1,70 +1,32 @@
-export interface PricePoint {
-    timestamp: number;
-    price: number;
-    volume: number;
-}
-
-export interface SymbolState {
-    symbol: string;
-
-    currentPrice: number | null;
-
-    previousClose: number | null;
-
-    absoluteChange: number;
-
-    percentChange: number;
-
-    totalVolume: number;
-
-    tradeCount: number;
-
-    high: number | null;
-
-    low: number | null;
-
-    vwap: number;
-
-    lastTradeTimestamp: number | null;
-
-    stale: boolean;
-
-    history: PricePoint[];
+export interface MarketUpdate {
+  symbol: string;
+  price: number;
+  change: number;
+  volume: number;
+  lastTradeTimestamp: number;
 }
 
 export interface SnapshotMessage {
-    type: 'snapshot';
-
-    payload: {
-        symbols: Record<string, SymbolState>;
-    };
+  type: 'snapshot';
+  payload: {
+    symbols: Record<string, MarketUpdate>;
+  };
 }
 
 export interface UpdateMessage {
-    type: 'update';
-
-    payload: {
-        updates: {
-            symbol: string;
-            price: number;
-            change: number;
-            volume: number;
-            lastTradeTimestamp: number;
-        }[];
-    };
+  type: 'update';
+  payload: {
+    updates: MarketUpdate[];
+  };
 }
 
 export interface HeartbeatMessage {
-    type: 'heartbeat';
-
-    payload: {
-        timestamp: number;
-        connectedClients: number;
-        providerConnected: boolean;
-    };
+  type: 'heartbeat';
+  payload: {
+    timestamp: number;
+    connectedClients: number;
+    providerConnected: boolean;
+  };
 }
 
-export type ServerMessage =
-    | SnapshotMessage
-    | UpdateMessage
-    | HeartbeatMessage;
+export type ServerMessage = SnapshotMessage | UpdateMessage | HeartbeatMessage;

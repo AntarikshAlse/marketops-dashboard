@@ -1,3 +1,9 @@
+import { TradingChart } from '@/features/chart/components/TradingChart';
+
 export function ChartPanel() {
-  return <section className="h-full overflow-hidden p-4">Live Chart</section>;
+  return (
+    <div className="min-h-0">
+      <TradingChart />
+    </div>
+  );
 }

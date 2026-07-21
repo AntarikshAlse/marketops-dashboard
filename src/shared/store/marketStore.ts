@@ -1,81 +1,132 @@
-import { create } from "zustand";
+import { create } from 'zustand';
+import { devtools } from 'zustand/middleware';
 
-import type { HeartbeatState, SymbolState } from "./types";
+import type { ConnectionInfo, HistoryPoint, SymbolState } from './types';
+
+export type ConnectionStatus =
+  | 'connecting'
+  | 'connected'
+  | 'reconnecting'
+  | 'disconnected';
 
 interface MarketStore {
-    symbols: Map<string, SymbolState>;
+  symbols: Map<string, SymbolState>;
 
-    heartbeat?: HeartbeatState;
+  selectedSymbol: string | null;
 
-    connectionStatus: "connecting" | "connected" | "disconnected";
+  connectionStatus: ConnectionStatus;
 
-    setSnapshot(snapshot: Record<string, SymbolState>): void;
+  connectionInfo: ConnectionInfo | null;
 
-    updateSymbols(
-        updates: {
-            symbol: string;
-            price: number;
-            change: number;
-            volume: number;
-            lastTradeTimestamp: number;
-        }[],
-    ): void;
+  initialize(symbols: SymbolState[]): void;
 
-    setHeartbeat(heartbeat: HeartbeatState): void;
+  updateSymbol(symbol: string, updates: Partial<SymbolState>): void;
 
-    setConnectionStatus(status: MarketStore["connectionStatus"]): void;
+  appendHistory(symbol: string, point: HistoryPoint): void;
+
+  selectSymbol(symbol: string): void;
+
+  setConnectionStatus(status: ConnectionStatus): void;
+
+  getSymbol(symbol: string): SymbolState | undefined;
+
+  setConnectionInfo(info: ConnectionInfo): void;
+
+  clear(): void;
 }
 
-export const useMarketStore = create<MarketStore>((set) => ({
-    symbols: new Map(),
+const MAX_HISTORY = 500;
 
-    connectionStatus: "connecting",
+export const useMarketStore = create<MarketStore>()(devtools((set, get) => ({
+  symbols: new Map(),
 
-    heartbeat: undefined,
+  selectedSymbol: null,
 
-    setSnapshot(snapshot) {
-        set({
-            symbols: new Map(Object.entries(snapshot)),
-        });
-    },
+  connectionStatus: 'connecting',
+  connectionInfo: null,
 
-    updateSymbols(updates) {
-        set((state) => {
-            const symbols = new Map(state.symbols);
+  initialize(symbols) {
+    const map = new Map<string, SymbolState>();
 
-            for (const update of updates) {
-                const current = symbols.get(update.symbol);
+    for (const symbol of symbols) {
+      map.set(symbol.symbol, symbol);
+    }
 
-                if (!current) continue;
+    set({
+      symbols: map,
+    });
+  },
 
-                symbols.set(update.symbol, {
-                    ...current,
+  updateSymbol(symbol, updates) {
+    set((state) => {
+      const next = new Map(state.symbols);
 
-                    currentPrice: update.price,
+      const current = next.get(symbol);
 
-                    absoluteChange: update.change,
+      if (!current) {
+        return state;
+      }
 
-                    totalVolume: update.volume,
+      next.set(symbol, {
+        ...current,
+        ...updates,
+      });
 
-                    lastTradeTimestamp: update.lastTradeTimestamp,
-                });
-            }
+      return {
+        symbols: next,
+      };
+    });
+  },
 
-            return {
-                symbols,
-            };
-        });
-    },
+  appendHistory(symbol, point) {
+    set((state) => {
+      const next = new Map(state.symbols);
+      const current = next.get(symbol);
 
-    setHeartbeat(heartbeat) {
-        set({
-            heartbeat,
-        });
-    },
+      if (!current) return state;
 
-    setConnectionStatus(connectionStatus) {
-        set({
-            connectionStatus,
-        });
-    },
-}));
+      const history =
+        current.history.length >= MAX_HISTORY
+          ? [...current.history.slice(1), point]
+          : [...current.history, point];
+
+      next.set(symbol, {
+        ...current,
+        history,
+      });
+
+      return {
+        symbols: next,
+      };
+    });
+  },
+
+  setConnectionInfo(info) {
+    set({
+      connectionInfo: info,
+    });
+  },
+
+  selectSymbol(symbol) {
+    set({
+      selectedSymbol: symbol,
+    });
+  },
+
+  setConnectionStatus(connectionStatus) {
+    set({
+      connectionStatus,
+    });
+  },
+
+  getSymbol(symbol) {
+    return get().symbols.get(symbol);
+  },
+
+  clear() {
+    set({
+      symbols: new Map(),
+      selectedSymbol: null,
+    });
+  },
+})));

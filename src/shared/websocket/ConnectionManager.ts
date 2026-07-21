@@ -1,122 +1,151 @@
-import { useMarketStore } from '../store/marketStore';
+import { useMarketStore } from "../store/marketStore";
 import type {
-    ConnectionEvents,
-} from './events';
-
-import type {
-    ServerMessage,
-} from './types';
-
-const MAX_BACKOFF = 30000;
+  MarketUpdate,
+  ServerMessage,
+} from "./types";
 
 export class ConnectionManager {
-    private socket?: WebSocket;
-    private reconnectAttempt = 0;
-    private listeners: Partial<ConnectionEvents> =
-        {};
-    connect(url: string) {
-        this.socket = new WebSocket(url);
-        this.socket.onopen = () => {
-            this.reconnectAttempt = 0;
-            useMarketStore
-                .getState()
-                .setConnectionStatus(
-                    'connected',
-                );
-            this.listeners.open?.();
-        };
-        this.socket.onmessage = (
-            event,
-        ) => {
-            const message =
-                JSON.parse(
-                    event.data,
-                ) as ServerMessage;
-            switch (message.type) {
-                case 'snapshot':
-                    useMarketStore
-                        .getState()
-                        .setSnapshot(
-                            message.payload
-                                .symbols,
-                        );
-                    break;
-                case 'update':
-                    useMarketStore
-                        .getState()
-                        .updateSymbols(
-                            message.payload
-                                .updates,
-                        );
-                    break;
-                case 'heartbeat':
-                    useMarketStore
-                        .getState()
-                        .setHeartbeat(
-                            message.payload,
-                        );
-                    break;
-            }
-            this.listeners.message?.(
-                message,
-            );
+  private ws?: WebSocket;
 
-        };
-        this.socket.onerror = (
-            error,
-        ) => {
-            this.listeners.error?.(
-                error,
-            );
-        };
-        this.socket.onclose = () => {
-            this.listeners.close?.();
-            useMarketStore
-                .getState()
-                .setConnectionStatus(
-                    'disconnected',
-                );
-            this.reconnect();
-        };
+  private pending = new Map<
+    string,
+    MarketUpdate
+  >();
+
+  private flushTimer?: number;
+
+  connect(url: string) {
+    this.ws = new WebSocket(url);
+
+    const store =
+      useMarketStore.getState();
+
+    store.setConnectionStatus(
+      "connecting",
+    );
+
+
+    this.ws.onopen = () => {
+      store.setConnectionStatus(
+        "connected",
+      );
+    };
+
+    this.ws.onclose = () => {
+      store.setConnectionStatus(
+        "disconnected",
+      );
+    };
+
+    this.ws.onerror = () => {
+      store.setConnectionStatus(
+        "disconnected",
+      );
+    };
+
+    this.ws.onmessage = (
+      event,
+    ) => {
+      const message: ServerMessage =
+        JSON.parse(event.data);
+
+      this.handleMessage(message);
+    };
+  }
+
+  disconnect() {
+    this.ws?.close();
+
+    if (this.flushTimer) {
+      clearTimeout(
+        this.flushTimer,
+      );
+      this.flushTimer = undefined;
     }
-    disconnect() {
-        this.socket?.close();
+  }
+
+  private handleMessage(
+    message: ServerMessage,
+  ) {
+    switch (message.type) {
+      case "snapshot": {
+        const symbols = Object.values(message.payload.symbols);
+
+        useMarketStore.getState().initialize(symbols);
+
+        return;
+      }
+
+      case "update":
+        for (const update of message
+          .payload.updates) {
+          console.log("update", update.lastTradeTimestamp);
+          this.pending.set(
+            update.symbol,
+            update,
+          );
+        }
+        break;
+
+      case "heartbeat":
+        useMarketStore
+          .getState()
+          .setConnectionInfo(
+            message.payload,
+          );
+        return;
     }
-    send(data: unknown) {
-        if (
-            this.socket?.readyState !==
-            WebSocket.OPEN
-        )
-            return;
-        this.socket.send(
-            JSON.stringify(data),
-        );
+
+    this.scheduleFlush();
+  }
+
+  private scheduleFlush() {
+    if (this.flushTimer) return;
+
+    this.flushTimer =
+      window.setTimeout(() => {
+        this.flush();
+
+        this.flushTimer =
+          undefined;
+      }, 100);
+  }
+
+  private flush() {
+    this.flushTimer = undefined;
+
+    if (!this.pending.size) {
+      return;
     }
-    on(
-        events: Partial<ConnectionEvents>,
-    ) {
-        this.listeners = {
-            ...this.listeners,
-            ...events,
-        };
+
+    const store = useMarketStore.getState();
+
+    for (const update of this.pending.values()) {
+      store.updateSymbol(update.symbol, {
+        currentPrice: update.price,
+        absoluteChange: update.change,
+        totalVolume: update.volume,
+        lastTradeTimestamp: update.lastTradeTimestamp,
+      });
+      store.appendHistory(update.symbol, {
+        timestamp: update.lastTradeTimestamp,
+        price: update.price,
+      });
+
+      // console.log({
+      //   timestamp: update.lastTradeTimestamp,
+      //   date: new Date(update.lastTradeTimestamp).toISOString(),
+      // });
+
+      // const updated = store.getSymbol(update.symbol);
+
+      // console.log(
+      //   update.symbol,
+      //   updated?.history.length,
+      //   updated?.history.at(-1)
+      // );
     }
-    private reconnect() {
-        this.reconnectAttempt++;
-        this.listeners.reconnect?.(
-            this.reconnectAttempt,
-        );
-        const delay = Math.min(
-            1000 *
-            2 **
-            this
-                .reconnectAttempt,
-            MAX_BACKOFF,
-        );
-        setTimeout(() => {
-            this.connect(
-                import.meta.env
-                    .VITE_WS_URL,
-            );
-        }, delay);
-    }
+
+    this.pending.clear();
+  }
 }
