@@ -1,22 +1,28 @@
 import { useMarketStore } from "../store/marketStore";
+import type { SymbolState } from "../store/types";
 import type {
-  MarketUpdate,
   ServerMessage,
 } from "./types";
 
 export class ConnectionManager {
   private ws?: WebSocket;
-
-  private pending = new Map<
-    string,
-    MarketUpdate
-  >();
-
+  private url = "";
   private flushTimer?: number;
+  private pendingUpdates = new Map<string, SymbolState>();
+  private readonly FLUSH_INTERVAL = 16;
+
+  private reconnectTimer?: number;
+
+  private reconnectAttempts = 0;
+
+  private readonly MAX_RECONNECT_DELAY = 30000;
+
+  private manuallyDisconnected = false;
 
   connect(url: string) {
+    this.url = url;
     this.ws = new WebSocket(url);
-
+     this.manuallyDisconnected = false;
     const store =
       useMarketStore.getState();
 
@@ -26,6 +32,7 @@ export class ConnectionManager {
 
 
     this.ws.onopen = () => {
+        this.reconnectAttempts = 0;
       store.setConnectionStatus(
         "connected",
       );
@@ -35,6 +42,9 @@ export class ConnectionManager {
       store.setConnectionStatus(
         "disconnected",
       );
+      if (!this.manuallyDisconnected) {
+        this.scheduleReconnect();
+      }
     };
 
     this.ws.onerror = () => {
@@ -54,14 +64,41 @@ export class ConnectionManager {
   }
 
   disconnect() {
+    this.manuallyDisconnected = true;
+
     this.ws?.close();
 
     if (this.flushTimer) {
-      clearTimeout(
-        this.flushTimer,
-      );
+      clearTimeout(this.flushTimer);
       this.flushTimer = undefined;
     }
+
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = undefined;
+    }
+
+    this.pendingUpdates.clear();
+  }
+
+  private scheduleReconnect() {
+    if (this.reconnectTimer) return;
+
+    const delay = Math.min(
+      1000 * Math.pow(2, this.reconnectAttempts),
+      this.MAX_RECONNECT_DELAY
+    );
+
+    useMarketStore
+      .getState()
+      .setConnectionStatus("reconnecting");
+
+    this.reconnectTimer = window.setTimeout(() => {
+      this.reconnectTimer = undefined;
+      this.reconnectAttempts++;
+
+      this.connect(this.url);
+    }, delay);
   }
 
   private handleMessage(
@@ -76,15 +113,32 @@ export class ConnectionManager {
         return;
       }
 
-      case "update":
-        for (const update of message
-          .payload.updates) {
-          console.log("update", update.lastTradeTimestamp);
-          this.pending.set(
-            update.symbol,
-            update,
-          );
+      case "update": {
+        const appendHistory = useMarketStore.getState().appendHistory;
+
+        for (const update of message.payload.updates) {
+          // Live chart
+          appendHistory(update.symbol, {
+            timestamp: update.lastTradeTimestamp,
+            price: update.price,
+          });
+
+          // Batched watchlist updates
+          this.pendingUpdates.set(update.symbol, {
+            ...update,
+            currentPrice: update.price,
+            absoluteChange: update.change,
+            percentChange: update.change / update.price,
+            totalVolume: update.volume,
+            tradeCount: 0,
+            high: null,
+            low: null,
+            vwap: null,
+            history: [],
+          });
         }
+      }
+
         break;
 
       case "heartbeat":
@@ -104,48 +158,23 @@ export class ConnectionManager {
 
     this.flushTimer =
       window.setTimeout(() => {
-        this.flush();
-
+        this.flushPendingUpdates();
         this.flushTimer =
           undefined;
-      }, 100);
+      }, this.FLUSH_INTERVAL);
   }
 
-  private flush() {
+  private flushPendingUpdates() {
     this.flushTimer = undefined;
+    const store =
+      useMarketStore.getState();
 
-    if (!this.pending.size) {
-      return;
-    }
+    if (this.pendingUpdates.size === 0) return;
 
-    const store = useMarketStore.getState();
+    const updates = [...this.pendingUpdates.values()];
 
-    for (const update of this.pending.values()) {
-      store.updateSymbol(update.symbol, {
-        currentPrice: update.price,
-        absoluteChange: update.change,
-        totalVolume: update.volume,
-        lastTradeTimestamp: update.lastTradeTimestamp,
-      });
-      store.appendHistory(update.symbol, {
-        timestamp: update.lastTradeTimestamp,
-        price: update.price,
-      });
+    this.pendingUpdates.clear();
 
-      // console.log({
-      //   timestamp: update.lastTradeTimestamp,
-      //   date: new Date(update.lastTradeTimestamp).toISOString(),
-      // });
-
-      // const updated = store.getSymbol(update.symbol);
-
-      // console.log(
-      //   update.symbol,
-      //   updated?.history.length,
-      //   updated?.history.at(-1)
-      // );
-    }
-
-    this.pending.clear();
+    store.batchUpdateSymbols(updates);
   }
 }

@@ -1,8 +1,13 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { RouterProvider } from 'react-router-dom';
 import { ws } from '@/shared/websocket';
 import { Providers } from './providers';
 import { router } from './router';
+// import { PerformanceOverlay } from './PerformanceOverlay';
+
+const PerformanceOverlay = import.meta.env.DEV
+  ? lazy(() => import('./PerformanceOverlay').then((m) => ({ default: m.PerformanceOverlay })))
+  : null;
 
 export default function App() {
   useEffect(() => {
@@ -15,6 +20,11 @@ export default function App() {
 
   return (
     <Providers>
+      {PerformanceOverlay && (
+        <Suspense fallback={null}>
+          <PerformanceOverlay />
+        </Suspense>
+      )}
       <RouterProvider router={router} />
     </Providers>
   );

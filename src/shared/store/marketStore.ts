@@ -32,6 +32,8 @@ interface MarketStore {
 
   setConnectionInfo(info: ConnectionInfo): void;
 
+  batchUpdateSymbols(updates: SymbolState[]): void;
+
   clear(): void;
 }
 
@@ -123,6 +125,26 @@ export const useMarketStore = create<MarketStore>()(devtools((set, get) => ({
     return get().symbols.get(symbol);
   },
 
+  batchUpdateSymbols: (updates) =>
+    set((state) => {
+      const symbols = new Map(state.symbols);
+
+      for (const update of updates) {
+        const current = symbols.get(update.symbol);
+
+        if (!current) continue;
+
+        symbols.set(update.symbol, {
+          ...current,
+          currentPrice: update.price,
+          percentChange: update.percentChange,
+          totalVolume: update.totalVolume,
+          lastTradeTimestamp: update.lastTradeTimestamp,
+        });
+      }
+
+      return { symbols };
+    }),
   clear() {
     set({
       symbols: new Map(),

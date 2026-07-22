@@ -36,11 +36,11 @@ describe("market store", () => {
         ]);
 
         useMarketStore.getState().updateSymbol("AAPL", {
-            currentPrice: 120,
+            price: 120,
         });
 
         expect(
-            useMarketStore.getState().getSymbol("AAPL")?.currentPrice
+            useMarketStore.getState().getSymbol("AAPL")?.price
         ).toBe(120);
     });
 

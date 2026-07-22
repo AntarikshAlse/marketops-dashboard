@@ -1,13 +1,14 @@
 import {
-  BaselineSeries,
-  ColorType,
-  createChart,
-  LineSeries,
   type IChartApi,
   type ISeriesApi,
   type LineData,
 } from 'lightweight-charts';
 import { useRef } from 'react';
+const {
+  createChart,
+  BaselineSeries,
+  ColorType,
+} = await import('lightweight-charts');
 
 export function useChart() {
   const chartRef = useRef<IChartApi | null>(null);
