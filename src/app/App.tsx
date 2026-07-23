@@ -3,7 +3,6 @@ import { RouterProvider } from 'react-router-dom';
 import { ws } from '@/shared/websocket';
 import { Providers } from './providers';
 import { router } from './router';
-// import { PerformanceOverlay } from './PerformanceOverlay';
 
 const PerformanceOverlay = import.meta.env.DEV
   ? lazy(() => import('./PerformanceOverlay').then((m) => ({ default: m.PerformanceOverlay })))

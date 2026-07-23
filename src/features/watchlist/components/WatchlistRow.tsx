@@ -54,8 +54,8 @@ export const WatchlistRow = memo(function WatchlistRow({ symbol }: Props) {
       </div>
 
       <div className="flex items-center gap-3">
-        <span className={(symbol.percentChange ?? 0) >= 0 ? 'text-green-500' : 'text-red-500'}>
-          {(symbol.percentChange ?? 0).toFixed(2)}%
+        <span className={(symbol.totalVolume ?? 0) >= 0 ? 'text-green-500' : 'text-red-500'}>
+          Vol: {(symbol.totalVolume ?? 0).toFixed(2)}
         </span>
 
         <button
