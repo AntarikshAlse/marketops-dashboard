@@ -1,10 +1,10 @@
+import { useFilteredSymbols } from '../hooks/useFilteredSymbols';
 import { SearchBar } from './SearchBar';
 import { WatchlistRow } from './WatchlistRow';
 import { useSymbolsMap } from '@/shared/store/selectors';
 
 export function Watchlist() {
-  const symbolsMap = useSymbolsMap();
-  const symbols = Array.from(symbolsMap.values());
+  const symbols = useFilteredSymbols();
 
   return (
     <div className="flex h-full flex-col">
