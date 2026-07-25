@@ -4,7 +4,7 @@
 ```mermaid
 flowchart LR
 
-WS[Binance WebSocket]
+WS[Finnhub WebSocket]
 
 CM[Connection Manager]
 
