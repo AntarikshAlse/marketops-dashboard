@@ -26,3 +26,7 @@ dist-ssr
 .env
 
 scripts
+
+repomix*
+.repomixignore
+bundle-report.html
