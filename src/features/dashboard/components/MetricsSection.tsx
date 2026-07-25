@@ -30,6 +30,10 @@ function MetricCard({ label, value }: { label: string; value: React.ReactNode })
 export function MetricsSection({ metrics }: MetricsSectionProps) {
   const m = metrics.metric;
 
+  function formatValue(value: number | undefined): string {
+    return value ? `${value.toFixed(2)}%` : '--';
+  }
+
   return (
     <div className="flex flex-col rounded-lg border border-border bg-card">
       <div className="border-b border-border px-4 py-3">
@@ -43,21 +47,13 @@ export function MetricsSection({ metrics }: MetricsSectionProps) {
         />
 
         <MetricCard label="P/E Ratio" value={m.peBasicExclExtraTTM?.toFixed(2)} />
-
         <MetricCard label="EPS (TTM)" value={m.epsTTM?.toFixed(2)} />
-
         <MetricCard label="Beta" value={m.beta?.toFixed(2)} />
-
-        <MetricCard label="52W High" value={`$${m['52WeekHigh']?.toFixed(2)}`} />
-
-        <MetricCard label="52W Low" value={`$${m['52WeekLow']?.toFixed(2)}`} />
-
-        <MetricCard label="52W Return" value={`${m['52WeekPriceReturnDaily']?.toFixed(2)}%`} />
-
-        <MetricCard label="Dividend Yield" value={`${m.currentDividendYieldTTM?.toFixed(2)}%`} />
-
+        <MetricCard label="52W High" value={m['52WeekHigh']?.toFixed(2)} />
+        <MetricCard label="52W Low" value={m['52WeekLow']?.toFixed(2)} />
+        <MetricCard label="52W Return" value={formatValue(m['52WeekPriceReturnDaily'])} />
+        <MetricCard label="Dividend Yield" value={formatValue(m.currentDividendYieldTTM)} />
         <MetricCard label="Current Ratio" value={m.currentRatioQuarterly?.toFixed(2)} />
-
         <MetricCard label="Asset Turnover" value={m.assetTurnoverTTM?.toFixed(2)} />
       </div>
     </div>

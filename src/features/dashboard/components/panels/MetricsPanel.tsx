@@ -17,8 +17,6 @@ export function MetricsPanel() {
     staleTime: 1000 * 60,
   });
 
-  console.log(data);
-
   if (!symbol)
     return (
       <section className="border-r p-2">

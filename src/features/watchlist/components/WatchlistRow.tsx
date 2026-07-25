@@ -32,7 +32,6 @@ export const WatchlistRow = memo(function WatchlistRow({ symbol }: Props) {
       role="button"
       tabIndex={0}
       onClick={() => {
-        console.log('Clicked', symbol.symbol);
         selectSymbol(symbol.symbol);
       }}
       onKeyDown={(e) => {
