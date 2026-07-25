@@ -1,13 +1,11 @@
 import type { LineData, Time } from 'lightweight-charts';
-import { useEffect, useMemo } from 'react';
+import { Suspense, useEffect, useMemo } from 'react';
 
 import { useHistory, useSelectedSymbol } from '@/shared/store/selectors';
 
 import { useChart } from '../hooks/useChart';
 
-function normalizeHistory(
-  history: { timestamp: number; price: number }[],
-): LineData[] {
+function normalizeHistory(history: { timestamp: number; price: number }[]): LineData[] {
   const map = new Map<number, number>();
 
   for (const point of history) {
@@ -23,42 +21,25 @@ function normalizeHistory(
     }));
 }
 
-export function TradingChart() {
+export default function TradingChart() {
   const symbol = useSelectedSymbol();
-
   const history = useHistory(symbol ?? '__NONE__');
   const { containerRef, chartRef, setData } = useChart();
 
   const chartData = normalizeHistory(history);
+  console.log('ChartData:', chartData.length);
+  console.count('TradingChart');
 
   useEffect(() => {
-    console.log('History:', history.length);
-    console.log('ChartData:', chartData.length);
-    console.log('Chart:', chartRef.current);
-
     if (!chartRef.current) return;
     if (!chartData.length) return;
-    for (let i = 1; i < chartData.length; i++) {
-      if (chartData[i].time <= chartData[i - 1].time) {
-        console.log('Duplicate', i, chartData[i - 1].time, chartData[i].time);
-        break;
-      }
-    }
 
     setData(chartData);
 
     requestAnimationFrame(() => {
       chartRef.current?.timeScale().fitContent();
     });
-  }, [chartData, setData, chartRef, history]);
-
-  if (!symbol) {
-    return (
-      <div className="flex h-full items-center justify-center text-slate-500">
-        Select a symbol
-      </div>
-    );
-  }
+  }, [chartData, setData, chartRef]);
 
   return (
     <div

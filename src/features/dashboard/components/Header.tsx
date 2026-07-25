@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/badge';
-import { Radio } from 'lucide-react';
+import { IconBroadcast } from '@tabler/icons-react';
 
 export function Header() {
   return (
@@ -8,7 +8,7 @@ export function Header() {
 
       <Badge variant="secondary">
         {' '}
-        <Radio className="mr-1 animate-pulse text-red-500" /> LIVE
+        <IconBroadcast className="mr-1 animate-pulse text-red-500" /> LIVE
       </Badge>
     </header>
   );

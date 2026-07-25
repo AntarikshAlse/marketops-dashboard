@@ -59,7 +59,7 @@ describe("ConnectionManager", () => {
             }
         } as any);
 
-        manager["flush"]();
+        manager["flushPendingUpdates"]();
 
         expect(
             useMarketStore.getState().getSymbol("AAPL")?.history.length

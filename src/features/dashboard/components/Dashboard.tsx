@@ -1,9 +1,30 @@
-import TestChart from '@/features/chart/components/TestChart';
+import { lazy, Suspense } from 'react';
 import { Header } from './Header';
-import { ChartPanel } from './panels/ChartPanel';
-import { MetricsPanel } from './panels/MetricsPanel';
-import { NewsPanel } from './panels/NewsPanel';
-import { PerformancePanel } from './panels/PerformancePanel';
+
+const ChartPanel = lazy(() =>
+  import('./panels/ChartPanel').then((m) => ({
+    default: m.ChartPanel,
+  })),
+);
+
+const NewsPanel = lazy(() =>
+  import('./panels/NewsPanel').then((m) => ({
+    default: m.NewsPanel,
+  })),
+);
+
+const MetricsPanel = lazy(() =>
+  import('./panels/MetricsPanel').then((m) => ({
+    default: m.MetricsPanel,
+  })),
+);
+
+const PerformancePanel = lazy(() =>
+  import('./panels/PerformancePanel').then((m) => ({
+    default: m.PerformancePanel,
+  })),
+);
+
 import { Sidebar } from './Sidebar';
 import { StatusBar } from './StatusBar';
 
@@ -17,10 +38,16 @@ export function Dashboard() {
         <Sidebar />
       </aside>
       <main className="grid min-h-0 overflow-hidden grid-rows-[minmax(0,1fr)_280px_32px]">
-        <ChartPanel />
+        <Suspense fallback={<div>Loading...</div>}>
+          <ChartPanel />
+        </Suspense>
         <section className="grid grid-cols-2 border-t">
-          <MetricsPanel />
-          <NewsPanel />
+          <Suspense fallback={<div>Loading...</div>}>
+            <NewsPanel />
+          </Suspense>
+          <Suspense fallback={<div>Loading...</div>}>
+            <MetricsPanel />
+          </Suspense>
         </section>
         <PerformancePanel />
       </main>

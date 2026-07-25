@@ -22,19 +22,6 @@ export function useConnectionStatus() {
 /**
  * Top movers.
  */
-export function useTopMovers(limit = 5) {
-  const symbols = useSymbolsMap();
-
-  return () => {
-    return [...symbols.values()]
-      .sort(
-        (a, b) =>
-          Math.abs(b.percentChange ?? 0) -
-          Math.abs(a.percentChange ?? 0),
-      )
-      .slice(0, limit);
-  }
-}
 export function useHistory(symbol: string) {
   return useMarketStore(
     (state) => state.symbols.get(symbol)?.history ?? EMPTY_HISTORY
