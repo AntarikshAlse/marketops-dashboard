@@ -1,14 +1,21 @@
 import { useMarketStore } from "../store/marketStore";
 import type { SymbolState } from "../store/types";
+import type { HistoryPoint } from "../store/types";
 import type {
   ServerMessage,
 } from "./types";
+
+interface PendingHistory {
+  symbol: string;
+  points: HistoryPoint[];
+}
 
 export class ConnectionManager {
   private ws?: WebSocket;
   private url = "";
   private flushTimer?: number;
   private pendingUpdates = new Map<string, SymbolState>();
+  private pendingHistory = new Map<string, HistoryPoint[]>();
   private readonly FLUSH_INTERVAL = 16;
 
   private reconnectTimer?: number;
@@ -22,7 +29,7 @@ export class ConnectionManager {
   connect(url: string) {
     this.url = url;
     this.ws = new WebSocket(url);
-     this.manuallyDisconnected = false;
+    this.manuallyDisconnected = false;
     const store =
       useMarketStore.getState();
 
@@ -32,7 +39,7 @@ export class ConnectionManager {
 
 
     this.ws.onopen = () => {
-        this.reconnectAttempts = 0;
+      this.reconnectAttempts = 0;
       store.setConnectionStatus(
         "connected",
       );
@@ -79,6 +86,7 @@ export class ConnectionManager {
     }
 
     this.pendingUpdates.clear();
+    this.pendingHistory.clear();
   }
 
   private scheduleReconnect() {
@@ -114,18 +122,22 @@ export class ConnectionManager {
       }
 
       case "update": {
-        const appendHistory = useMarketStore.getState().appendHistory;
-
         for (const update of message.payload.updates) {
-          // Live chart
-          appendHistory(update.symbol, {
+          // Batch history points for chart
+          const existingPoints = this.pendingHistory.get(update.symbol);
+          const point: HistoryPoint = {
             timestamp: update.lastTradeTimestamp,
             price: update.price,
-          });
+          };
+          if (existingPoints) {
+            existingPoints.push(point);
+          } else {
+            this.pendingHistory.set(update.symbol, [point]);
+          }
 
-          // Batched watchlist updates
+          // Batch watchlist updates
           this.pendingUpdates.set(update.symbol, {
-            ...update,
+            symbol: update.symbol,
             currentPrice: update.price,
             absoluteChange: update.change,
             percentChange: update.change / update.price,
@@ -135,6 +147,7 @@ export class ConnectionManager {
             low: null,
             vwap: null,
             history: [],
+            lastTradeTimestamp: update.lastTradeTimestamp,
           });
         }
       }
@@ -169,6 +182,17 @@ export class ConnectionManager {
     const store =
       useMarketStore.getState();
 
+    // Batch history appends in a single store update
+    if (this.pendingHistory.size > 0) {
+      const historyUpdates: PendingHistory[] = [];
+      for (const [symbol, points] of this.pendingHistory) {
+        historyUpdates.push({ symbol, points });
+      }
+      this.pendingHistory.clear();
+      store.batchAppendHistory(historyUpdates);
+    }
+
+    // Batch watchlist updates in a single store update
     if (this.pendingUpdates.size === 0) return;
 
     const updates = [...this.pendingUpdates.values()];

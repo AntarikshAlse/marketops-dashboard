@@ -1,5 +1,5 @@
 import type { LineData, Time } from 'lightweight-charts';
-import { Suspense, useEffect, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import { useHistory, useSelectedSymbol } from '@/shared/store/selectors';
 
@@ -26,9 +26,8 @@ export default function TradingChart() {
   const history = useHistory(symbol ?? '__NONE__');
   const { containerRef, chartRef, setData } = useChart();
 
-  const chartData = normalizeHistory(history);
-  console.log('ChartData:', chartData.length);
-  console.count('TradingChart');
+  // Memoize normalized history to avoid O(n log n) computation on every render
+  const chartData = useMemo(() => normalizeHistory(history), [history]);
 
   useEffect(() => {
     if (!chartRef.current) return;

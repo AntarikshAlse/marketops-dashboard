@@ -9,6 +9,11 @@ export type ConnectionStatus =
   | 'reconnecting'
   | 'disconnected';
 
+interface PendingHistory {
+  symbol: string;
+  points: HistoryPoint[];
+}
+
 interface MarketStore {
   symbols: Map<string, SymbolState>;
 
@@ -23,6 +28,8 @@ interface MarketStore {
   updateSymbol(symbol: string, updates: Partial<SymbolState>): void;
 
   appendHistory(symbol: string, point: HistoryPoint): void;
+
+  batchAppendHistory(updates: PendingHistory[]): void;
 
   selectSymbol(symbol: string): void;
 
@@ -87,15 +94,50 @@ export const useMarketStore = create<MarketStore>()(devtools((set, get) => ({
 
       if (!current) return state;
 
-      const history =
-        current.history.length >= MAX_HISTORY
-          ? [...current.history.slice(1), point]
-          : [...current.history, point];
+      // Efficient: only slice when at capacity
+      let history: HistoryPoint[];
+      if (current.history.length >= MAX_HISTORY) {
+        // Shift left by creating a new array without the first element
+        history = current.history.slice(1);
+        history.push(point);
+      } else {
+        history = [...current.history, point];
+      }
 
       next.set(symbol, {
         ...current,
         history,
       });
+
+      return {
+        symbols: next,
+      };
+    });
+  },
+
+  batchAppendHistory(updates) {
+    set((state) => {
+      const next = new Map(state.symbols);
+
+      for (const { symbol, points } of updates) {
+        const current = next.get(symbol);
+        if (!current) continue;
+
+        // Build the new history array in one pass - O(n) instead of O(n²)
+        const history = [...current.history, ...points];
+        // Trim to MAX_HISTORY if needed (remove oldest points from the start)
+        if (history.length > MAX_HISTORY) {
+          next.set(symbol, {
+            ...current,
+            history: history.slice(history.length - MAX_HISTORY),
+          });
+        } else {
+          next.set(symbol, {
+            ...current,
+            history,
+          });
+        }
+      }
 
       return {
         symbols: next,
@@ -136,7 +178,8 @@ export const useMarketStore = create<MarketStore>()(devtools((set, get) => ({
 
         symbols.set(update.symbol, {
           ...current,
-          currentPrice: update.price,
+          currentPrice: update.currentPrice ?? update.price,
+          absoluteChange: update.absoluteChange,
           percentChange: update.percentChange,
           totalVolume: update.totalVolume,
           lastTradeTimestamp: update.lastTradeTimestamp,
