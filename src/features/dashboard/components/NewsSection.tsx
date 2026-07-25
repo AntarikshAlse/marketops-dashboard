@@ -23,10 +23,10 @@ export function NewsSection({ news }: NewsSectionProps) {
         <h2 className="text-sm font-semibold">Latest News</h2>
       </div>
 
-      {news.length === 0 && <div className="p-4 text-muted-foreground">No news found</div>}
+      {news?.length === 0 && <div className="p-4 text-muted-foreground">No news found</div>}
 
       <div className="flex-1 overflow-y-auto">
-        {news.slice(0, 5).map((item) => (
+        {news?.slice(0, 5).map((item) => (
           <a
             key={item.id}
             href={item.url}

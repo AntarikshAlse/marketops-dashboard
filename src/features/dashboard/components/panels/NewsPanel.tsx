@@ -3,6 +3,8 @@ import { NewsSkeleton } from '@/shared/components/NewsSkeleton';
 import { useSelectedSymbol } from '@/shared/store/selectors';
 import { useQuery } from '@tanstack/react-query';
 import { NewsSection } from '../NewsSection';
+import { ErrorBoundary } from 'react-error-boundary';
+import { ErrorFallback } from '@/shared/components/ErrorFallback';
 
 export function NewsPanel() {
   const symbol = useSelectedSymbol();
@@ -25,10 +27,12 @@ export function NewsPanel() {
     );
 
   return (
-    <section className="border-r p-2 overflow-auto">
-      <h3 className="text-sm font-semibold sticky top-0 p-2 backdrop-blur-2xl">News</h3>
+    <ErrorBoundary FallbackComponent={ErrorFallback} resetKeys={[symbol]}>
+      <section className="border-r p-2 overflow-auto">
+        <h3 className="text-sm font-semibold sticky top-0 p-2 backdrop-blur-2xl">News</h3>
 
-      {isLoading ? <NewsSkeleton /> : <NewsSection news={data} />}
-    </section>
+        {isLoading ? <NewsSkeleton /> : <NewsSection news={data} />}
+      </section>
+    </ErrorBoundary>
   );
 }
