@@ -8,9 +8,11 @@ The project focuses on frontend architecture and performance optimization techni
 
 # 🚀 Live Demo
 
- Link: https://marketops.netlify.com
+ Link: https://marketops.netlify.app
 
 ---
+
+
 
 # 📷 Screenshots
 
@@ -34,6 +36,7 @@ The project focuses on frontend architecture and performance optimization techni
 
 ## Bundle Analyzer
 
+<img width="1054" height="590" alt="image" src="https://github.com/user-attachments/assets/fb515829-7016-4232-a9ec-4610173ae232" />
 
 
 ---
