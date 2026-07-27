@@ -8,8 +8,7 @@ The project focuses on frontend architecture and performance optimization techni
 
 # 🚀 Live Demo
 
-[▶ Watch the Demo Video](https://drive.google.com/file/d/1wzKUcChdwDeJUqiG4Y_UZ-vgZSn0fqWR/view?usp=drivesdk)
-
+[▶ Watch the Demo Video](https://drive.google.com/file/d/1cC3gTbSh_KIKDpvhbMRGZLRKAjIybsJB/view?usp=drivesdk)
 
 
 
