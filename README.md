@@ -8,7 +8,7 @@ The project focuses on frontend architecture and performance optimization techni
 
 # 🚀 Live Demo
 
-> Coming Soon
+ Link: https://marketops.netlify.com
 
 ---
 
@@ -16,25 +16,25 @@ The project focuses on frontend architecture and performance optimization techni
 
 ## Dashboard
 
-_Add Screenshot_
+
 
 ---
 
 ## Trading Chart
 
-_Add Screenshot_
+
 
 ---
 
 ## Performance Overlay
 
-_Add Screenshot_
+
 
 ---
 
 ## Bundle Analyzer
 
-_Add Screenshot_
+
 
 ---
 

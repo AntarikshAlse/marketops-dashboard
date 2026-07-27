@@ -24,8 +24,6 @@ export function useChart() {
       return;
     }
 
-    console.log('Creating chart...');
-
     const chart = createChart(node, {
       width: node.clientWidth,
       height: node.clientHeight,
