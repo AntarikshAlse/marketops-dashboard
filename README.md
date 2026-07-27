@@ -8,7 +8,9 @@ The project focuses on frontend architecture and performance optimization techni
 
 # 🚀 Live Demo
 
-<video src="https://drive.google.com/file/d/1wzKUcChdwDeJUqiG4Y_UZ-vgZSn0fqWR/view?usp=drivesdk" width="600" controls></video>
+[▶ Watch the Demo Video](https://drive.google.com/file/d/1wzKUcChdwDeJUqiG4Y_UZ-vgZSn0fqWR/view?usp=drivesdk)
+
+
 
 
  Link: https://marketops.netlify.app
